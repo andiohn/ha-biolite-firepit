@@ -1,0 +1,10 @@
+{
+  "domain": "biolite_firepit",
+  "name": "BioLite FirePit",
+  "documentation": "https://github.com/your-username/biolite_firepit",
+  "dependencies": ["bluetooth"],
+  "codeowners": [],
+  "config_flow": true,
+  "iot_class": "local_polling",
+  "version": "1.0.0"
+}

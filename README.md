@@ -1,27 +1,17 @@
 # BioLite FirePit Home Assistant Integration
 
-[![hacs_badge](https://img.shields.io/badge/HACS-Custom-41BDF5.svg)](https://github.com/hacs/default)
+[![hacs_badge](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://github.com/hacs/default)
 
-Custom Home Assistant integration for controlling the **BioLite FirePit / FirePit+** via Bluetooth LE (using Home Assistant BLE Proxies or local Bluetooth adapters).
+Home Assistant integration for controlling the BioLite FirePit / FirePit+ over Bluetooth Low Energy (BLE) proxy.
 
 ## Features
+- **Fan Control**: Off (0%), Low (25%), Med (50%), High (75%), On/Max (100%).
+- **USB Charger Switch**: Toggle USB power output on/off.
+- **Battery Sensor**: Monitor remaining powerpack battery percentage.
+- **Temperature Sensor**: Monitor firebox temperature (°F).
 
-- **Fan Control (`fan` entity)**: Control airflow fan speed (`Off`, `Low`, `Medium`, `High`, `Max`).
-- **USB Charger (`switch` entity)**: Toggle power to the USB powerpack output port.
-- **Sensors (`sensor` entities)**: Monitor FirePit battery percentage.
-- **BLE Proxy Support**: Fully compatible with ESPHome BLE proxies and Home Assistant Bluetooth proxies.
-
-## Installation via HACS
-
-1. Open **HACS** in your Home Assistant sidebar.
-2. Click the 3 dots in the top right corner and select **Custom repositories**.
-3. Paste the URL of your GitHub repository into the **Repository** field.
-4. Select **Integration** as the Category.
-5. Click **Add**, then find **BioLite FirePit** in HACS and click **Download**.
-6. Restart Home Assistant.
-
-## Configuration
-
-1. In Home Assistant, go to **Settings** -> **Devices & Services**.
-2. Click **Add Integration** and search for **BioLite FirePit**.
-3. Enter your FirePit's Bluetooth MAC Address (e.g. `AA:BB:CC:DD:EE:FF`).
+## Installation
+1. Install via HACS (Custom Repository) or copy `custom_components/biolite_firepit` into your Home Assistant `/config/custom_components/` directory.
+2. Restart Home Assistant.
+3. Go to **Settings -> Devices & Services -> Add Integration** and select **BioLite FirePit**.
+4. Enter your FirePit's BLE MAC Address.

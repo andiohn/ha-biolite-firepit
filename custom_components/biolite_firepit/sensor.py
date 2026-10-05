@@ -9,6 +9,7 @@ from .const import (
     BATTERY_LEVEL_CHARACTERISTIC_UUID,
     BATTERY_PERCENT_CHARACTERISTIC_UUID,
     TEMPERATURE_CHARACTERISTIC_UUID,
+    CCCD_DESCRIPTOR_UUID,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -33,39 +34,36 @@ class BioLiteBatterySensor(SensorEntity):
         self._attr_unique_id = f"{mac}_battery"
         self._attr_native_value = None
 
-    async def async_update(self) -> None:
-        """Fetch battery percentage from BioLite powerpack over BLE."""
+    async def async_update(self):
         device = async_ble_device_from_address(self.hass, self._mac, connectable=True)
         if not device:
-            _LOGGER.warning("BioLite FirePit BLE device not found for battery update (%s)", self._mac)
             return
-
         try:
-            async with BleakClient(device) as client:
-                val = None
-                # Try vendor specific battery percent characteristic
-                try:
-                    raw = await client.read_gatt_char(BATTERY_PERCENT_CHARACTERISTIC_UUID)
-                    if raw and len(raw) > 0:
-                        val = int(raw[0])
-                except Exception:
-                    pass
-
-                # Fallback to standard BLE battery level characteristic
-                if val is None:
+            async with BleakClient(device, timeout=10.0) as client:
+                if client.is_connected:
+                    # Try reading standard Battery Level 0x2A19 first
+                    val = None
                     try:
-                        raw = await client.read_gatt_char(BATTERY_LEVEL_CHARACTERISTIC_UUID)
-                        if raw and len(raw) > 0:
-                            val = int(raw[0])
-                    except Exception as err:
-                        _LOGGER.debug("Failed reading standard battery level: %s", err)
+                        data = await client.read_gatt_char(BATTERY_LEVEL_CHARACTERISTIC_UUID)
+                        if data and len(data) > 0:
+                            val = int(data[0])
+                    except Exception:
+                        pass
 
-                if val is not None and 0 <= val <= 100:
-                    self._attr_native_value = val
-                    _LOGGER.debug("Updated BioLite battery level: %d%%", val)
+                    # Fallback to BioLite Vendor Battery Percent characteristic
+                    if val is None:
+                        try:
+                            data = await client.read_gatt_char(BATTERY_PERCENT_CHARACTERISTIC_UUID)
+                            if data and len(data) > 0:
+                                val = int(data[0])
+                        except Exception:
+                            pass
+
+                    if val is not None:
+                        self._attr_native_value = max(0, min(100, val))
+                        _LOGGER.debug("Read battery level: %d%%", self._attr_native_value)
         except Exception as err:
-            _LOGGER.error("Error reading battery level over BLE from %s: %s", self._mac, err)
-
+            _LOGGER.debug("Error reading battery sensor: %s", err)
 
 class BioLiteTemperatureSensor(SensorEntity):
     _attr_has_entity_name = True
@@ -80,17 +78,19 @@ class BioLiteTemperatureSensor(SensorEntity):
         self._attr_unique_id = f"{mac}_temperature"
         self._attr_native_value = None
 
-    async def async_update(self) -> None:
-        """Fetch firebox temperature from BioLite powerpack over BLE."""
+    async def async_update(self):
         device = async_ble_device_from_address(self.hass, self._mac, connectable=True)
         if not device:
             return
-
         try:
-            async with BleakClient(device) as client:
-                raw = await client.read_gatt_char(TEMPERATURE_CHARACTERISTIC_UUID)
-                if raw and len(raw) > 0:
-                    temp_f = float(raw[0]) - 32.0
-                    self._attr_native_value = round(temp_f, 1)
+            async with BleakClient(device, timeout=10.0) as client:
+                if client.is_connected:
+                    data = await client.read_gatt_char(TEMPERATURE_CHARACTERISTIC_UUID)
+                    if data and len(data) > 0:
+                        # Convert byte value as in MainActivity handleCharacteristicValue
+                        raw_val = int(data[0])
+                        f_temp = raw_val - 32
+                        self._attr_native_value = f_temp
+                        _LOGGER.debug("Read temperature: %d °F", f_temp)
         except Exception as err:
-            _LOGGER.debug("Error reading temperature over BLE from %s: %s", self._mac, err)
+            _LOGGER.debug("Error reading temperature sensor: %s", err)

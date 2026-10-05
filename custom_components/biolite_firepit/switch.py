@@ -27,8 +27,12 @@ class BioLiteUsbChargerSwitch(SwitchEntity):
             _LOGGER.error("BioLite FirePit BLE device not found for address %s", self._mac)
             return
         val = 1 if state else 0
-        async with BleakClient(device) as client:
-            await client.write_gatt_char(CHARGING_STATUS_CHARACTERISTIC_UUID, bytes([val]))
+        try:
+            async with BleakClient(device, timeout=15.0) as client:
+                await client.write_gatt_char(CHARGING_STATUS_CHARACTERISTIC_UUID, bytes([val]), response=True)
+                _LOGGER.info("Successfully wrote USB Charger state %d", val)
+        except Exception as err:
+            _LOGGER.error("Failed to write USB charger state: %s", err)
 
     async def async_turn_on(self, **kwargs):
         await self._write_charger_state(True)
